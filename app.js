@@ -16,7 +16,7 @@ if(p.apk)b.innerHTML+=`<a href="${p.apk}" target="_blank" rel="noopener">${t.apk
 if(p.code)x.append(b);c.append(x);
 if(p.img){const s=document.createElement("div");s.className="shots";p.img.forEach((n,i)=>s.append(img(`img/${n}.webp`,`${p.n} ${i+1}`,"shot",t.soon)));c.append(s)}
 $("#plist").append(c)});
-$("#abt").innerHTML=t.about.map(x=>`<p>${x}</p>`).join("")+`<h3 class="et">${t.edu_t}</h3><ul class="edu">${t.edu.map(([a,b])=>`<li><b>${a}</b><span>${b}</span></li>`).join("")}</ul>`;
+$("#abt").innerHTML=t.about.map(x=>`<p>${x}</p>`).join("")+`<h3 class="et">${t.edu_t}</h3><ul class="edu">${t.edu.map(([a,b])=>`<li><b>${a}</b><span>${b}</span></li>`).join("")}</ul><h3 class="et">${t.lang_t}</h3><ul class="langs">${t.langs.map(([n,v,d])=>`<li><b>${n}</b><span>${v}</span><i class="dots" role="img" aria-label="${v}">${"<u class=\"on\"></u>".repeat(d)}${"<u></u>".repeat(5-d)}</i></li>`).join("")}</ul>`;
 const lum=x=>{const n=parseInt(x,16);return(.299*(n>>16)+.587*((n>>8)&255)+.114*(n&255))/255};
 const ico=k=>{const o=IC[k];return o.d?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${o.d}"/></svg>`:`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${o.p}"/></svg>`};
 $("#sk").innerHTML=K.map(g=>`<div class="grp"><h3 style="--o:${{s:1,u:.6,l:.3}[g.lv]}">${t["lv_"+g.lv]}<small>${t["c_"+g.lv]}</small></h3><ul class="chips">${g.i.map(([n,k])=>`<li class="chip" style="--c:${IC[k].h&&lum(IC[k].h)>.2?"#"+IC[k].h:"var(--a)"}">${ico(k)}<span>${n[0]==="@"?t[n.slice(1)]:n}</span></li>`).join("")}</ul></div>`).join("");
