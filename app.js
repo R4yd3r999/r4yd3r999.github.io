@@ -40,4 +40,5 @@ $("#theme").onclick=()=>{R.dataset.theme=R.dataset.theme==="dark"?"light":"dark"
 $(".photo img").onload=e=>ok(e.target);if($(".photo img").complete)ok($(".photo img"));
 if(matchMedia("(hover:hover)").matches){addEventListener("pointermove",e=>{const t=e.target.closest?.(".tilt");if(!t)return;const r=t.getBoundingClientRect();t.style.setProperty("--ry",((e.clientX-r.left)/r.width-.5)*7+"deg");t.style.setProperty("--rx",-((e.clientY-r.top)/r.height-.5)*7+"deg")});
 addEventListener("pointerout",e=>{const t=e.target.closest?.(".tilt");if(t){t.style.setProperty("--ry","0deg");t.style.setProperty("--rx","0deg")}})}
+{const y=new Date().getFullYear();if(y>2026)$("#yr").textContent="2026–"+y}
 render(L);intro();
