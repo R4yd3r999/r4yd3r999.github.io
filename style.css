@@ -97,3 +97,15 @@ a.chip{text-decoration:none;color:var(--t)}
 .lx{position:absolute;top:14px;right:14px}
 body:has(#lb[open]){overflow:hidden}
 @media(max-width:600px){.lnav{position:absolute;bottom:14px;width:44px;height:44px}#lp{left:18px}#ln{right:18px}#lb figure{padding-bottom:50px}#li{max-height:calc(100dvh - 190px)}}
+
+/* Contacto: icono en el correo y feedback de copiado */
+#links .btn{display:inline-flex;align-items:center;gap:9px}
+#links .btn svg{width:20px;height:20px;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#cp{position:relative}
+.ci .cp1{transform-box:fill-box;transform-origin:center;transition:opacity .2s,transform .25s}
+.ci .ck{stroke-width:2.6;stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .35s .12s}
+#cp.done{border-color:var(--a);color:var(--a);animation:cpp .6s ease-out}
+#cp.done .cp1{opacity:0;transform:scale(.6)}
+#cp.done .ck{stroke-dashoffset:0}
+@keyframes cpp{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--a) 55%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
