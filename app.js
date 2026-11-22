@@ -71,7 +71,7 @@ const blink=()=>{face.classList.remove("bl");void face.getBoundingClientRect();f
 face.addEventListener("animationend",()=>face.classList.remove("bl"));
 face.addEventListener("pointerdown",blink);
 const idle=()=>{bt=setTimeout(()=>{blink();idle()},2200+Math.random()*3000)};
-const setM=o=>{mp.classList.toggle("open",o);mb.classList.toggle("open",o);mb.setAttribute("aria-expanded",o);clearTimeout(bt);if(o)bt=setTimeout(()=>{blink();idle()},700)};
+const setM=o=>{const was=mp.classList.contains("open");if(o!==was)ev(o?"menu_open":"menu_close");mp.classList.toggle("open",o);mb.classList.toggle("open",o);mb.setAttribute("aria-expanded",o);clearTimeout(bt);if(o)bt=setTimeout(()=>{blink();idle()},700)};
 mb.onclick=e=>{e.stopPropagation();setM(!mp.classList.contains("open"))};
 mp.querySelectorAll("a").forEach(x=>x.onclick=()=>setM(false));
 document.addEventListener("click",e=>{if(!e.target.closest(".menu"))setM(false)});
@@ -86,12 +86,13 @@ lb.addEventListener("touchend",e=>{if(x0===null)return;const d=e.changedTouches[
 document.addEventListener("click",e=>{const t=e.target;if(!t.closest)return;
 const proj=()=>t.closest(".card")?.querySelector("h3")?.textContent||"";
 const ph=t.closest(".phone");if(ph){ev("view_screenshots",{project:proj()});return}
-if(t.closest("#cp")){ev("contact_click",{method:"copy_email"});return}
+if(t.closest("#cp")){ev("click_copy_email");return}
+if(t.closest("#face")){ev("click_face");return}
 const a=t.closest("a[href]");if(!a)return;const h=a.getAttribute("href")||"";
-if(h.startsWith("mailto:"))return ev("contact_click",{method:"email"});
-if(h.includes("wa.me"))return ev("contact_click",{method:"whatsapp"});
-if(h.includes("linkedin.com"))return ev("contact_click",{method:"linkedin"});
+if(h.startsWith("mailto:"))return ev("click_email");
+if(h.includes("wa.me"))return ev("click_whatsapp");
+if(h.includes("linkedin.com"))return ev("click_linkedin");
 if(a.closest(".b")){return ev(h.includes("/releases")?"apk_download":"view_code",{project:proj()})}
-if(h.includes("github.com"))return ev("contact_click",{method:"github"});
+if(h.includes("github.com"))return ev("click_github");
 if(h==="#projects"||h==="#contact"||h==="#about")ev("nav_click",{target:h.slice(1)})});
 render(L);intro();
