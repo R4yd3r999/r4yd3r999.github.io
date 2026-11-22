@@ -1,3 +1,5 @@
+/* Analytics: eventos propios (GA4). Si GA está bloqueado, no pasa nada. */
+const ev=(n,p)=>{try{if(window.gtag)gtag("event",n,p)}catch(_){}};
 const $=s=>document.querySelector(s),R=document.documentElement;
 const ok=el=>el.closest(".ph")?.classList.add("ok");
 function img(src,alt,cls,soon){const f=document.createElement("figure");f.className="ph "+cls;f.dataset.l=soon;const i=new Image();i.alt=alt;i.loading="lazy";i.onload=()=>ok(i);i.onerror=()=>{i.remove();f.classList.add("nope")};i.src=src;f.append(i);return f}
@@ -58,8 +60,8 @@ setTimeout(()=>{e.classList.add("on");setTimeout(step,i===2?300:160)},230)})()}
 const g=k=>{try{return localStorage.getItem(k)}catch(_){return null}},s=(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}};
 R.dataset.theme=g("th")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
 const nl=(navigator.language||"es").slice(0,2);let L=g("lg")||(T[nl]?nl:"es");$("#lang").value=L;
-$("#lang").onchange=e=>{L=e.target.value;s("lg",L);render(L)};
-$("#theme").onclick=()=>{R.dataset.theme=R.dataset.theme==="dark"?"light":"dark";s("th",R.dataset.theme)};
+$("#lang").onchange=e=>{L=e.target.value;s("lg",L);render(L);ev("language_change",{language:L})};
+$("#theme").onclick=()=>{R.dataset.theme=R.dataset.theme==="dark"?"light":"dark";s("th",R.dataset.theme);ev("theme_change",{theme:R.dataset.theme})};
 $(".photo img").onload=e=>ok(e.target);if($(".photo img").complete)ok($(".photo img"));
 if(matchMedia("(hover:hover)").matches){addEventListener("pointermove",e=>{const t=e.target.closest?.(".tilt");if(!t)return;const r=t.getBoundingClientRect();t.style.setProperty("--ry",((e.clientX-r.left)/r.width-.5)*7+"deg");t.style.setProperty("--rx",-((e.clientY-r.top)/r.height-.5)*7+"deg")});
 addEventListener("pointerout",e=>{const t=e.target.closest?.(".tilt");if(t){t.style.setProperty("--ry","0deg");t.style.setProperty("--rx","0deg")}})}
@@ -80,4 +82,16 @@ lb.addEventListener("click",e=>{if(e.target===lb||e.target.classList.contains("l
 lb.addEventListener("keydown",e=>{if(e.key==="ArrowLeft")lbShow(LI-1);if(e.key==="ArrowRight")lbShow(LI+1)});
 {let x0=null;lb.addEventListener("touchstart",e=>{x0=e.touches[0].clientX},{passive:true});
 lb.addEventListener("touchend",e=>{if(x0===null)return;const d=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(d)>50)lbShow(LI+(d<0?1:-1))},{passive:true})}
+/* Analytics: clics (delegados, siguen funcionando tras cambiar de idioma) */
+document.addEventListener("click",e=>{const t=e.target;if(!t.closest)return;
+const proj=()=>t.closest(".card")?.querySelector("h3")?.textContent||"";
+const ph=t.closest(".phone");if(ph){ev("view_screenshots",{project:proj()});return}
+if(t.closest("#cp")){ev("contact_click",{method:"copy_email"});return}
+const a=t.closest("a[href]");if(!a)return;const h=a.getAttribute("href")||"";
+if(h.startsWith("mailto:"))return ev("contact_click",{method:"email"});
+if(h.includes("wa.me"))return ev("contact_click",{method:"whatsapp"});
+if(h.includes("linkedin.com"))return ev("contact_click",{method:"linkedin"});
+if(a.closest(".b")){return ev(h.includes("/releases")?"apk_download":"view_code",{project:proj()})}
+if(h.includes("github.com"))return ev("contact_click",{method:"github"});
+if(h==="#projects"||h==="#contact"||h==="#about")ev("nav_click",{target:h.slice(1)})});
 render(L);intro();
