@@ -137,3 +137,5 @@ html.ix [data-ly]{transition:opacity .35s ease-out!important}
 @media(prefers-reduced-motion:reduce){.rp{display:none}}
 .ixt{all:unset}
 @media(max-width:560px){.ixh.done .ixrp{display:none}}
+.ixsp{flex:none;min-width:44px;padding:8px 8px;border-radius:10px;background:#ffffff17;text-align:center;font-variant-numeric:tabular-nums;transition:background .25s,color .25s}
+.ixsp[data-s=f]{background:#E65C7F;color:#fff}.ixsp[data-s=p]{color:#FFD60A}
