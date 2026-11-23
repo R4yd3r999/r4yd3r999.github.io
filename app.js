@@ -49,18 +49,10 @@ $("#links").innerHTML=`<a class="btn" href="mailto:${e}">${ico("gmail")}<span>${
 cp.classList.remove("done");void cp.offsetWidth;cp.classList.add("done");sr.textContent=t.ok;clearTimeout(ct);ct=setTimeout(()=>{cp.classList.remove("done");sr.textContent=""},1600)}};
 $("#lx").setAttribute("aria-label",t.gl_x);$("#lp").setAttribute("aria-label",t.gl_p);$("#ln").setAttribute("aria-label",t.gl_n);
 reveal()}
-function intro(){if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;
-const els=[".status",".hero h1",".lead",".hook",".meta",".cta",".photo"].map($),c=$(".cur");let i=0;
-document.body.classList.add("intro");
-const end=()=>{els.forEach(e=>e.classList.add("on"));c.classList.add("off");setTimeout(()=>document.body.classList.remove("intro"),700)};
-setTimeout(end,4400);
-(function step(){if(i>=els.length)return end();const e=els[i++],r=e.getBoundingClientRect();
-c.style.transform=`translate(${Math.round(r.left+Math.min(r.width*.5,120))}px,${Math.round(Math.min(r.top+r.height*.4,innerHeight-60))}px)`;
-setTimeout(()=>{e.classList.add("on");setTimeout(step,i===2?300:160)},230)})()}
 const g=k=>{try{return localStorage.getItem(k)}catch(_){return null}},s=(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}};
 R.dataset.theme=g("th")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
 const nl=(navigator.language||"es").slice(0,2);let L=g("lg")||(T[nl]?nl:"es");$("#lang").value=L;
-$("#lang").onchange=e=>{L=e.target.value;s("lg",L);render(L);ev("language_change",{language:L})};
+$("#lang").onchange=e=>{IX.stop();L=e.target.value;s("lg",L);render(L);ev("language_change",{language:L})};
 $("#theme").onclick=()=>{R.dataset.theme=R.dataset.theme==="dark"?"light":"dark";s("th",R.dataset.theme);ev("theme_change",{theme:R.dataset.theme})};
 $(".photo img").onload=e=>ok(e.target);if($(".photo img").complete)ok($(".photo img"));
 if(matchMedia("(hover:hover)").matches){addEventListener("pointermove",e=>{const t=e.target.closest?.(".tilt");if(!t)return;const r=t.getBoundingClientRect();t.style.setProperty("--ry",((e.clientX-r.left)/r.width-.5)*7+"deg");t.style.setProperty("--rx",-((e.clientY-r.top)/r.height-.5)*7+"deg")});
@@ -95,4 +87,5 @@ if(h.includes("linkedin.com"))return ev("click_linkedin");
 if(a.closest(".b")){return ev(h.includes("/releases")?"apk_download":"view_code",{project:proj()})}
 if(h.includes("github.com"))return ev("click_github");
 if(h==="#projects"||h==="#contact"||h==="#about")ev("nav_click",{target:h.slice(1)})});
-render(L);intro();
+$("#rp").onclick=()=>{ev("intro_replay");IX.start(true)};
+render(L);IX.init({str:()=>T[L],ev});IX.start();
