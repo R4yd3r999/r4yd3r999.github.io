@@ -32,7 +32,7 @@ function render(l){const t=T[l];R.lang=l;
 document.querySelectorAll("[data-i]").forEach(e=>e.textContent=t[e.dataset.i]);
 $("#plist").innerHTML="";
 P.forEach(p=>{const c=document.createElement("article");c.className="card tilt";
-const x=document.createElement("div");x.innerHTML=`<h3>${p.n}</h3><p class="badge">${t[p.st==="live"?"live":p.st==="test"?"test":"dev"]}</p><p>${t.d[p.n]}</p>${t.m[p.n]?`<p>${t.m[p.n]}</p>`:""}<p class="tech">${p.tech}</p>`;
+const x=document.createElement("div");x.innerHTML=`<h3>${p.n}</h3><p class="badge">${t[p.st==="live"?"live":p.st==="test"?"test":"dev"]}</p><p>${t.d[p.n]}</p>${t.m[p.n]?`<p>${t.m[p.n]}</p>`:""}<p class="tech">${p.tech.split(" · ").map(x=>`<span>${x}</span>`).join(" ")}</p>`;
 const b=document.createElement("div");b.className="b";
 if(p.code)b.innerHTML=`<a href="${p.code}" target="_blank" rel="noopener">${t.code} ↗</a>`;
 if(p.apk)b.innerHTML+=`<a href="${p.apk}" target="_blank" rel="noopener">${t.apk} ↓</a>`;
@@ -87,5 +87,5 @@ if(h.includes("linkedin.com"))return ev("click_linkedin");
 if(a.closest(".b")){return ev(h.includes("/releases")?"apk_download":"view_code",{project:proj()})}
 if(h.includes("github.com"))return ev("click_github");
 if(h==="#projects"||h==="#contact"||h==="#about")ev("nav_click",{target:h.slice(1)})});
-$("#rp").onclick=()=>{ev("intro_replay");IX.start(true)};
-render(L);IX.init({str:()=>T[L],ev});IX.start();
+$("#try").onclick=()=>{ev("intro_start");IX.start()};
+render(L);IX.init({str:()=>T[L],ev});
