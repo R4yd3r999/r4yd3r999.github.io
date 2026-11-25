@@ -4,7 +4,8 @@
    Todo es visual: el contenido real ya está en el DOM (SEO y lectores de pantalla intactos).
    Solo se oculta con opacity y se revela por capas.
 
-   El scroll es del usuario y gobierna el ritmo:
+   Modo Touring (por defecto): la página baja sola, a ritmo normal, siguiendo la construcción. Se desactiva al hacer scroll
+   (o con su botón) y entonces el scroll es del usuario y gobierna el ritmo:
    · quieto o con la construcción a la vista: ritmo normal (BASE)
    · bajando de forma sostenida, o ya pasó de largo lo que falta: los agentes se apuran
    · lo pendiente queda por debajo de la pantalla (subió, o llegó al borde): pausa, y cada cursor
@@ -34,6 +35,7 @@ const SVG='<svg class="k-a" viewBox="0 0 24 24"><path d="M3 2l7 19 3-8 8-3z" fil
 +'<svg class="k-x" viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M12 4v16M4 12h16" stroke="#fff" stroke-width="4.4"/><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2"/></svg>';
 const HOT={a:[3,2],t:[12,12],x:[12,12]};
 const BASE=.6,HOLD=.85,RUSH=5,RW=18; // RW = grosor de las reglas // ritmo base (1 = el original, rápido) · a qué altura de pantalla se pausa · tope de apuro
+const BLUE="#0A84FF",RED="#F24E1E",ITEM=".card,.edu li,.langs li",DRAG=.7; // azul técnico de selección · rojo de contenedores · tarjetas que se copian y arrastran
 
 let cfg={str:()=>({}),ev(){}},S=null,host=null,hudT=0;
 
@@ -41,7 +43,7 @@ function init(o){cfg=Object.assign(cfg,o)}
 
 const hudHtml=t=>`<div class="ixh" role="region" aria-label="${t.ix_hud}"><span class="ixav" aria-hidden="true"></span>`
 +`<span class="ixlive"><span class="ixn"></span><span class="ixbar" aria-hidden="true"><i></i></span>`
-+`<span class="ixsp" aria-hidden="true">1×</span><button type="button" class="ixb ixsk">${t.ix_skip}</button></span>`
++`<span class="ixsp" aria-hidden="true">1×</span><button type="button" class="ixb ixtr" aria-pressed="true">${t.ix_tour}</button><button type="button" class="ixb ixsk">${t.ix_skip}</button></span>`
 +`<span class="ixend"><span class="ixm" role="status"></span><button type="button" class="ixb ixrp">${t.ix_again}</button>`
 +`<button type="button" class="ixb ixcl" aria-label="${t.ix_close}">✕</button></span></div>`;
 
@@ -49,17 +51,24 @@ function closeHud(){clearTimeout(hudT);if(host){host.remove();host=null}}
 
 /* ---------- capas ---------- */
 function collect(){
- const out=[];
+ const out=[],map=new Map();
  document.querySelectorAll(SEL).forEach(el=>{
   const r=el.getBoundingClientRect();if(r.width<2||r.height<2)return;
-  out.push({el,i:out.length,on:false,kind:kindOf(el),taken:false,done:false,tk:null,n:0,orig:"",words:false});
+  const l={el,i:out.length,on:false,kind:kindOf(el),taken:false,done:false,tk:null,n:0,words:false,text:null,pre:null,dirty:false,cardL:null,tpl:null};
+  if(l.kind==="text")l.text=el.textContent;
+  out.push(l);map.set(el,l);
+ });
+ out.forEach(l=>{
+  const it=l.el.closest(ITEM);
+  if(it&&it!==l.el)l.cardL=map.get(it)||null;                    // su tarjeta: hasta que ella exista, no se construye nada dentro
+  if(l.el.matches(ITEM)){const p=l.el.previousElementSibling;if(p&&p.matches(ITEM))l.tpl=map.get(p)||null} // la tarjeta anterior: de ahí se copia
  });
  return out;
 }
 /* Texto: cada carácter (o cada palabra si es largo) en su span; se revelan de uno en uno
    y al terminar se restaura el texto original. */
 function mkTokens(l){
- const txt=l.el.textContent;l.orig=txt;l.words=txt.length>70;
+ const txt=l.text;l.words=txt.length>70;
  const parts=l.words?txt.split(/(\s+)/):Array.from(txt),f=document.createDocumentFragment(),tk=[];
  parts.forEach(p=>{if(!p)return;const s=document.createElement("span");s.className="ixt";s.textContent=p;s.style.visibility="hidden";f.append(s);tk.push(s)});
  l.el.replaceChildren(f);l.tk=tk;l.n=0;
@@ -68,7 +77,9 @@ const docTop=l=>l.el.getBoundingClientRect().top+scrollY;
 function pick(Y,vh,vw){
  const lim=Y+vh*.98;let seen=0;
  for(let j=S.ptr;j<S.LY.length&&seen<30;j++){
-  const l=S.LY[j];if(l.taken)continue;seen++;
+  const l=S.LY[j];if(l.taken)continue;
+  if((l.cardL&&!l.cardL.done)||(l.tpl&&!l.tpl.done))continue; // un contenido no se construye antes que su tarjeta; una tarjeta se copia de otra ya existente
+  seen++;
   const r=l.el.getBoundingClientRect();
   if(r.top+Y>lim)continue;
   l.taken=true;
@@ -85,14 +96,13 @@ function pick(Y,vh,vw){
 function spawn(){
  const i=S.ag.length,c=PAL[i%PAL.length],vw=innerWidth,vh=innerHeight,Y=scrollY;
  const el=document.createElement("div");el.className="ixc";el.dataset.k="a";el.style.color=c;el.innerHTML=SVG;
- const sel=document.createElement("div");sel.className="ixs";sel.style.setProperty("--c",c);sel.style.setProperty("--ct",lum(c)>.6?"#111":"#fff");
+ const sel=document.createElement("div");sel.className="ixs";sel.style.setProperty("--c",BLUE);sel.style.setProperty("--ct","#fff");
  sel.innerHTML="<i></i><i></i><i></i><i></i><b></b>";
  const ph=document.createElement("div"),gv=document.createElement("div"),gh=document.createElement("div"),ms=document.createElement("div");
  ph.className="ixg";gv.className="ixgv";gh.className="ixgh";ms.className="ixd v";ms.innerHTML="<b></b>";
- for(const e of[ph,gv,gh])e.style.setProperty("--c",c);
  host.querySelector(".ixsl").append(ph,gv,gh,ms,sel);host.querySelector(".ixcu").append(el);
  const side=Math.random()<.5;
- const a={i,c,el,sel,ph,gv,gh,ms,gd:false,gs:false,phs:false,md:null,lab:sel.lastChild,k:"a",x:side?rnd(-60,vw+60):(Math.random()<.5?-60:vw+60),y:Y+(side?(Math.random()<.5?-60:vh+60):rnd(-60,vh+60)),
+ const a={i,c,el,sel,ph,gv,gh,ms,gd:false,gs:false,phs:false,md:null,col:BLUE,clone:false,cl:null,dr:null,hl:false,t0:0,cx:0,cy:0,gx:0,gy:0,lab:sel.lastChild,k:"a",x:side?rnd(-60,vw+60):(Math.random()<.5?-60:vw+60),y:Y+(side?(Math.random()<.5?-60:vh+60):rnd(-60,vh+60)),
   rot:0,st:"idle",t:0,L:null,fx:.5,fy:.5,mx:200,my:100,tx:0,ty:0,r:null,lx:null,ly:null,wt:0,wx:vw/2,wy:Y+vh/2,dur:.5,lw:0,lh:0,gone:false};
  S.ag.push(a);
  if(i<4){const av=document.createElement("span");av.textContent=String.fromCharCode(65+i);av.style.background=c;av.style.color=lum(c)>.6?"#111":"#fff";host.querySelector(".ixav").append(av)}
@@ -101,8 +111,10 @@ function setKind(a,k){
  if(a.k===k)return;a.k=k;a.el.dataset.k=k;a.el.style.transformOrigin=HOT[k][0]+"px "+HOT[k][1]+"px";
 }
 function assign(a,l){
- a.gd=l.el.matches(".card,.photo,.phone,.shot")||Math.random()<(l.kind==="text"?.12:.4);
+ a.gd=(l.el.matches(ITEM+",.photo,.phone,.shot")?Math.random()<.5:Math.random()<(l.kind==="text"?.04:.12))&&S.ag.filter(g=>g.gd&&g.L).length<3; // guías y medidas: pocas a la vez
  if(l.kind==="img")a.ph.style.borderRadius=getComputedStyle(l.el).borderRadius;
+a.clone=!!l.tpl;                                  // tarjetas 2.ª en adelante: se copia la anterior
+ a.col=l.el.matches(ITEM)?RED:BLUE;a.sel.style.setProperty("--c",a.col);
  a.L=l;a.st="travel";a.t=0;a.fx=rnd(.3,.7);a.fy=rnd(.3,.7);
  a.mx=l.kind==="text"?rnd(30,140):240;a.my=l.kind==="text"?16:140;
 }
@@ -129,6 +141,8 @@ function target(a,vw,vh,Y){
  if(a.st==="leave")return[vw/2,Y+vh-44];
  const l=a.L;
  if(l){
+  if(a.clone&&a.st==="travel"){const q=l.tpl.el.getBoundingClientRect();return[q.left+Math.min(q.width*.5,160),Y+q.top+Math.min(q.height*.12,30)]} // va a agarrar la tarjeta original
+  if(a.st==="drag")return[a.cx+a.gx,a.cy+a.gy];                                                                                               // y la arrastra
   if(a.st==="act"&&l.kind==="text"&&l.tk){
    const tk=l.n?l.tk[l.n-1]:l.tk[0],q=tk.getBoundingClientRect();return[l.n?q.right:q.left,Y+q.top+q.height/2];
   }
@@ -149,15 +163,16 @@ function think(a,dt,sdt,vw,vh,Y){
  }
  const[tx,ty]=target(a,vw,vh,Y);a.tx=tx;a.ty=ty;
  const dist=Math.hypot(tx-a.x,ty-a.y);
- if(a.st==="travel"){a.t+=sdt;if((dist<40&&a.t>.1)||a.t>1){a.st="select";a.t=0;a.sel.classList.remove("on");setKind(a,a.L.kind==="text"?"t":a.L.kind==="img"?"x":"a");a.rot=0;a.lw=-1;a.lx=a.ly=null;a.sel.classList.add("on");if(a.gd)calcMeasure(a)}}
+ if(a.st==="travel"){a.t+=sdt;if((dist<40&&a.t>.1)||a.t>1.2){if(a.clone){startDrag(a);a.st="drag";a.t=0}else{a.st="select";a.t=0;a.sel.classList.remove("on");setKind(a,a.L.kind==="text"?"t":a.L.kind==="img"?"x":"a");a.rot=0;a.lw=-1;a.lx=a.ly=null;a.sel.classList.add("on");if(a.gd)calcMeasure(a)}}}
+ else if(a.st==="drag"){a.t+=sdt;if(dragStep(a,Y)){endDrag(a);a.st="release";a.t=0}}
  else if(a.st==="select"){a.t+=sdt;if(a.t>=.12){a.st="act";a.t=0;startAct(a)}}
  else if(a.st==="act"){a.t+=sdt;if(actStep(a)){a.st="release";a.t=0}}
  else if(a.st==="release"){a.t+=sdt;if(a.t>=.08){endLayer(a);a.st="idle";a.sel.classList.remove("on");setKind(a,"a")}}
  else if(a.st==="leave"&&dist<28){a.gone=true;a.el.style.opacity=0;a.sel.classList.remove("on");return}
- a.r=a.L&&(a.st==="select"||a.st==="act"||a.st==="release")?a.L.el.getBoundingClientRect():null;
+ a.r=a.st==="drag"?a.dr:a.L&&(a.st==="select"||a.st==="act"||a.st==="release")?a.L.el.getBoundingClientRect():null;
  if(sdt<=0)return; // pausa: ni se mueve ni gira, se queda exactamente donde estaba
  // movimiento (suavizado exponencial)
- const k=1-Math.exp(-sdt*((a.st==="select"||a.st==="act")?16:9));
+ const k=1-Math.exp(-sdt*((a.st==="select"||a.st==="act"||a.st==="drag")?16:9));
  const nx=a.x+(clamp(tx,8,vw-8)-a.x)*k,ny=a.y+(ty-a.y)*k;
  // las flechas giran hacia donde vuelan, como aviones de papel; trabajando, vuelven a la posición normal
  const sp=Math.hypot(nx-a.x,ny-a.y)/Math.max(dt,.001);
@@ -171,8 +186,9 @@ function paint(a,Y){
  a.el.style.transform=`translate(${(a.x-h[0]).toFixed(1)}px,${(a.y-Y-h[1]).toFixed(1)}px) rotate(${a.rot.toFixed(1)}deg)`;
  const r=a.r,l=a.L;
  // placeholder gris mientras la imagen todavía no aparece; guías y medida en algunas capas
- const wantPh=!!(r&&l&&l.kind==="img"&&!l.on&&(a.st==="select"||a.st==="act")),wantG=!!(r&&a.gd);
+ const wantPh=!!(r&&l&&((l.kind==="img"&&!l.on&&(a.st==="select"||a.st==="act"))||a.hl)),wantG=!!(r&&a.gd);
  if(wantPh!==a.phs){a.phs=wantPh;a.ph.classList.toggle("on",wantPh)}
+ if(a.hl!==a.phh){a.phh=a.hl;a.ph.classList.toggle("hl",a.hl)}
  if(wantG!==a.gs){a.gs=wantG;a.gv.classList.toggle("on",wantG);a.gh.classList.toggle("on",wantG);a.ms.classList.toggle("on",wantG&&!!a.md)}
  if(!r)return;
  const lx=Math.round(r.left*2)/2,ly=Math.round(r.top*2)/2,w=Math.round(r.width),hh=Math.round(r.height);
@@ -191,7 +207,7 @@ function drawRulers(Y,vw,vh){
  a.setTransform(dpr,0,0,dpr,0,0);b.setTransform(dpr,0,0,dpr,0,0);
  a.clearRect(0,0,vw,RW);b.clearRect(0,0,RW,vh);
  a.fillStyle=b.fillStyle="rgba(16,17,20,.88)";a.fillRect(0,0,vw,RW);b.fillRect(0,0,RW,vh);
- S.ag.forEach(g=>{if(g.gs&&g.r){a.fillStyle=b.fillStyle=g.c+"77";a.fillRect(g.r.left,0,g.r.width,RW);b.fillRect(0,g.r.top,RW,g.r.height)}});
+ S.ag.forEach(g=>{if(g.gs&&g.r){a.fillStyle=b.fillStyle=g.col+"77";a.fillRect(g.r.left,0,g.r.width,RW);b.fillRect(0,g.r.top,RW,g.r.height)}});
  a.strokeStyle=b.strokeStyle="#8b909a";a.fillStyle=b.fillStyle="#c3c7cf";a.lineWidth=b.lineWidth=1;a.font=b.font='9px "JetBrains Mono",monospace';
  a.beginPath();b.beginPath();
  for(let x=0;x<vw;x+=10){const t=x%100===0?RW:x%50===0?9:5;a.moveTo(x+.5,RW);a.lineTo(x+.5,RW-t);if(x%100===0&&x)a.fillText(x,x+3,9)}
@@ -203,15 +219,22 @@ function drawRulers(Y,vw,vh){
  a.stroke();b.stroke();
 }
 function startAct(a){
- const l=a.L;
- if(l.kind==="text"){mkTokens(l);a.dur=clamp(l.tk.length*(l.words?.022:.018),.2,.9)}
- if(l.kind==="img")a.dur=.6;                   // placeholder gris y, después, la imagen
+ const l=a.L;a.t0=0;a.hl=false;
+ if(l.kind==="text"){
+  if(l.pre!=null)a.hl=true;                        // texto copiado: primero se selecciona todo, luego se reescribe
+  else{mkTokens(l);a.dur=clamp(l.tk.length*(l.words?.022:.018),.2,.9)}
+ }
+ if(l.kind==="img")a.dur=.6;                       // placeholder gris y, después, la imagen
  else{l.el.classList.add("ly-on");l.on=true}
 }
 function actStep(a){
  const l=a.L;
  if(l.kind==="text"){
-  const p=clamp(a.t/a.dur,0,1),n=Math.floor(p*l.tk.length);
+  if(l.pre!=null&&!l.tk){
+   if(a.t<.24)return false;
+   mkTokens(l);a.hl=false;a.t0=a.t;a.dur=clamp(l.tk.length*(l.words?.022:.018),.2,.9); // se borra lo copiado y se escribe lo nuevo
+  }
+  const p=clamp((a.t-a.t0)/a.dur,0,1),n=Math.floor(p*l.tk.length);
   for(let j=l.n;j<n;j++)l.tk[j].style.visibility="";
   l.n=Math.max(l.n,n);return p>=1;
  }
@@ -223,14 +246,73 @@ function actStep(a){
 }
 function endLayer(a){
  const l=a.L;
- if(l.tk){l.el.textContent=l.orig;l.tk=null}
+ if(l.kind==="text"&&(l.tk||l.dirty)){l.el.textContent=l.text;l.tk=null;l.dirty=false}
+ l.pre=null;a.hl=false;
  l.done=true;S.done++;a.L=null;
+}
+/* Tarjeta nueva = copia de la anterior: el cursor la agarra, la arrastra a su sitio (ajustando el alto) y
+   después "edita" cada texto para que sea el nuevo. */
+function startDrag(a){
+ const l=a.L,t=l.tpl.el,r=t.getBoundingClientRect(),n=l.el.getBoundingClientRect(),Y=scrollY,X=scrollX;
+ const mark=S.LY.filter(e=>e.kind==="text"&&t.contains(e.el));
+ mark.forEach(e=>e.el.dataset.ixk=e.i);
+ const c=t.cloneNode(true);
+ mark.forEach(e=>delete e.el.dataset.ixk);
+ c.removeAttribute("data-ly");c.removeAttribute("id");
+ c.querySelectorAll("[data-ly]").forEach(e=>e.removeAttribute("data-ly"));
+ c.querySelectorAll("[id]").forEach(e=>e.removeAttribute("id"));
+ mark.forEach(e=>{const x=c.querySelector(`[data-ixk="${e.i}"]`);if(x){x.textContent=e.text;x.removeAttribute("data-ixk")}}); // la copia muestra el contenido final aunque el original aún se esté escribiendo
+ c.classList.add("ixclone","in");
+ Object.assign(c.style,{position:"absolute",left:"0",top:"0",margin:"0",width:r.width+"px",height:r.height+"px",overflow:"hidden",zIndex:"29",pointerEvents:"none",transform:`translate(${r.left+X}px,${r.top+Y}px)`});
+ document.body.append(c);
+ a.cl=c;a.cx0=a.cx=r.left+X;a.cy0=a.cy=r.top+Y;a.cx1=n.left+X;a.cy1=n.top+Y;a.cw=r.width;a.ch0=r.height;a.ch1=n.height;
+ a.gx=Math.min(r.width*.5,160);a.gy=Math.min(r.height*.12,30);
+ a.dr={left:r.left,top:r.top,width:r.width,height:r.height,right:r.right,bottom:r.bottom};
+ a.sel.classList.add("on");a.lw=-1;a.lx=a.ly=null;
+}
+function dragStep(a,Y){
+ const p=clamp(a.t/DRAG,0,1),e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2,X=scrollX;
+ a.cx=a.cx0+(a.cx1-a.cx0)*e;a.cy=a.cy0+(a.cy1-a.cy0)*e;
+ const h=a.ch0+(a.ch1-a.ch0)*e;
+ a.cl.style.transform=`translate(${a.cx.toFixed(1)}px,${a.cy.toFixed(1)}px)`;a.cl.style.height=h.toFixed(1)+"px";
+ const L=a.cx-X,T=a.cy-Y;a.dr={left:L,top:T,width:a.cw,height:h,right:L+a.cw,bottom:T+h};
+ return p>=1;
+}
+function endDrag(a){
+ const l=a.L;l.el.classList.add("ly-on");l.on=true;
+ const T=S.LY.filter(e=>e.kind==="text"&&l.tpl.el.contains(e.el)),K=S.LY.filter(e=>e.kind==="text"&&l.el.contains(e.el)&&!e.taken);
+ K.forEach((k,j)=>{
+  const t=T[j];if(!t)return;
+  k.el.classList.add("ly-on");k.on=true;
+  if(t.text===k.text){k.taken=true;k.done=true;S.done++}      // idéntico: la copia ya vale
+  else{k.pre=t.text;k.dirty=true;k.el.textContent=t.text}    // distinto: llega con el texto copiado y habrá que editarlo
+ });
+ const c=a.cl;a.cl=null;c.style.transition="opacity .35s";c.style.opacity="0";setTimeout(()=>c.remove(),450);
 }
 
 /* ---------- ritmo: el scroll del usuario manda ---------- */
 /* 0 = pausa · 1 = normal · >1 = apuro. Se mide contra la primera capa SIN terminar. */
+function tourStep(sdt,vh){
+ let ty;
+ if(S.phase==="leave")ty=0;
+ else{
+  while(S.LY[S.fd]&&S.LY[S.fd].done)S.fd++;
+  const f=S.LY[S.ptr],u=S.LY[S.fd]; // la frontera queda en la mitad baja, sin dejar atrás lo que aún se construye
+  ty=f?Math.max(0,Math.min(docTop(f)-vh*.5,u?docTop(u)-vh*.1:1e9)):S.ty;
+  ty=Math.max(ty,S.ty);
+ }
+ S.ty=ty;
+ const goal=Math.min(ty,Math.max(0,R.scrollHeight-vh)),y=scrollY,k=1-Math.exp(-sdt*(S.phase==="leave"?6:3.4));
+ const ny=Math.abs(goal-y)<(S.phase==="leave"?40:.6)?goal:y+(goal-y)*k; // el scroll redondea a píxeles enteros: cerca del destino se encaja (en móvil el scroll avanza por píxeles de dispositivo y no admite pasos finos)
+ if(Math.abs(ny-y)>.05)scrollTo(0,ny);
+}
+function setTour(on){
+ if(!S||S.tour===on)return;
+ S.tour=on;S.sv=0;if(on)S.ty=0;               // al reactivarlo, vuelve a seguir la construcción desde donde esté
+ const b=S.hud.querySelector(".ixtr");b.setAttribute("aria-pressed",on);
+}
 function pace(vh){
- if(S.phase==="leave")return 1;
+ if(S.phase==="leave"||S.tour)return 1;
  while(S.LY[S.fd]&&S.LY[S.fd].done)S.fd++;
  const u=S.LY[S.fd];if(!u)return 1;
  const r=u.el.getBoundingClientRect();
@@ -244,7 +326,7 @@ function pace(vh){
 function hudTick(now,force){
  if(!force&&now-S.hr<100)return;S.hr=now;
  const t=S.tr,held=S.goal===0&&S.f<.05,rush=S.f>1.25;
- const n=S.hud.querySelector(".ixn"),txt=S.phase==="scan"?t.ix_scan:held?t.ix_hold:`<b>${S.ag.length}</b> ${t.ix_agents}<i></i><b>${S.done}</b> / ${S.LY.length} ${t.ix_layers}`;
+ const n=S.hud.querySelector(".ixn"),txt=S.phase==="scan"?t.ix_scan:held?t.ix_hold:`<b>${S.ag.length}</b><span class="ixw"> ${t.ix_agents}</span><i></i><b>${S.done}</b> / ${S.LY.length}<span class="ixw"> ${t.ix_layers}</span>`;
  if(txt!==S.hx){S.hx=txt;n.innerHTML=txt}
  const sp=S.hud.querySelector(".ixsp"),lab=held?"⏸":rush?S.f.toFixed(1)+"×":"1×";
  if(lab!==sp.textContent){sp.textContent=lab;sp.dataset.s=held?"p":rush?"f":"n"}
@@ -256,7 +338,12 @@ function frame(now){
  if(!S||!S.on)return;
  S.raf=requestAnimationFrame(frame);
  const dt=Math.min(.05,(now-S.last)/1000||.016);S.last=now;
- const vw=innerWidth,vh=innerHeight,Y=scrollY;
+ const vw=innerWidth,vh=innerHeight;
+ let Y=scrollY;
+ // Touring: scroll propio. Si la posición cambió por fuera de lo que pusimos, el usuario hizo scroll: se desactiva.
+ if(S.tour&&Math.abs(Y-S.setY)>2.5)setTour(false);
+ if(S.tour){tourStep(dt*BASE,vh);Y=scrollY}
+ S.setY=Y;
  // velocidad de scroll (px/s, + = bajando), suavizada
  S.sv+=((Y-S.lastY)/Math.max(dt,.001)-S.sv)*(1-Math.exp(-dt*6));S.lastY=Y;
  // el ritmo se acerca a su objetivo: frena rápido, acelera con suavidad
@@ -274,7 +361,7 @@ function frame(now){
  if(S.phase==="build"&&S.done>=S.LY.length){S.phase="leave";S.leaveT=0;S.ag.forEach(a=>{if(!a.gone)a.st="leave"})}
  if(S.phase==="leave"){
   S.leaveT+=sdt;
-  if(S.ag.every(a=>a.gone)||S.leaveT>2.6)return finish(false);
+  if((S.ag.every(a=>a.gone)&&(!S.tour||Y<2))||S.leaveT>6)return finish(false);
  }
 // reglas: visibles mientras algún agente trabaja con guías
  if(S.ag.some(g=>g.gs&&g.r))S.rUntil=now+350;
@@ -284,13 +371,18 @@ function frame(now){
  hudTick(now);
  if(now-S.t0>180000)finish(true,"timeout"); // red de seguridad
 }
-function onKey(e){if(e.key==="Escape")finish(true,"user")}
+function onKey(e){
+ if(e.key==="Escape")return finish(true,"user");
+ if(["ArrowDown","ArrowUp","PageDown","PageUp","Home","End"," "].includes(e.key))setTour(false);
+}
+function onScrollIn(e){if(!(e.target.closest&&e.target.closest(".ixh")))setTour(false)}
 function finish(skipped,src){
  if(!S||!S.on)return;
  const s=S;s.on=false;cancelAnimationFrame(s.raf);
- removeEventListener("keydown",onKey);
- s.LY.forEach(l=>{if(l.tk){l.el.textContent=l.orig;l.tk=null}l.el.removeAttribute("data-ly");l.el.classList.remove("ly-on")});
- R.classList.remove("ix");
+ removeEventListener("keydown",onKey);removeEventListener("wheel",onScrollIn);removeEventListener("touchmove",onScrollIn);
+ document.querySelectorAll(".ixclone").forEach(e=>e.remove());
+ s.LY.forEach(l=>{if(l.kind==="text"&&(l.tk||l.dirty)){l.el.textContent=l.text;l.tk=null}l.el.removeAttribute("data-ly");l.el.classList.remove("ly-on")});
+ R.classList.remove("ix");R.style.scrollBehavior=s.sb;
 
  S=null;
  if(skipped){
@@ -327,9 +419,12 @@ function start(){
   host.innerHTML='<div class="ixl"></div><canvas class="ixr ixrt" aria-hidden="true"></canvas><canvas class="ixr ixrl" aria-hidden="true"></canvas><div class="ixsl" aria-hidden="true"></div><div class="ixcu" aria-hidden="true"></div>'+hudHtml(t);
   document.body.append(host);
   const lo=(navigator.hardwareConcurrency||8)<=2,N=lo?8:Math.min(innerWidth,screen.width||innerWidth)<700?12:18;
-  S={on:true,LY,N,f:1,goal:1,sv:0,lastY:scrollY,hr:0,hx:"",t:0,last:performance.now(),t0:performance.now(),phase:"scan",buildAt:.7,
+  S={on:true,LY,N,f:1,goal:1,sv:0,tour:true,setY:scrollY,sb:R.style.scrollBehavior,ty:0,lastY:scrollY,hr:0,hx:"",t:0,last:performance.now(),t0:performance.now(),phase:"scan",buildAt:.7,
    ag:[],done:0,ptr:0,fd:0,leaveT:0,tr:t,line:host.querySelector(".ixl"),rt:host.querySelector(".ixrt"),rl:host.querySelector(".ixrl"),rk:"",rUntil:0,rsh:false,hud:host.querySelector(".ixh")};
+  R.style.scrollBehavior="auto"; // el scroll del Touring es nuestro; el CSS "smooth" lo pelearía
   S.hud.querySelector(".ixsk").onclick=()=>finish(true,"btn");
+  S.hud.querySelector(".ixtr").onclick=()=>setTour(!S.tour);
+  addEventListener("wheel",onScrollIn,{passive:true});addEventListener("touchmove",onScrollIn,{passive:true});
   addEventListener("keydown",onKey);
   hudTick(S.last,true);
   S.raf=requestAnimationFrame(frame);

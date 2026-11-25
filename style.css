@@ -155,8 +155,8 @@ html.ix.ixn [data-ly]{transition:none!important}
 .ixg::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.2) 50%,transparent 70%);animation:ixsh 1.1s linear infinite}
 @keyframes ixsh{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 .ixgv,.ixgh{position:absolute;left:0;top:0;opacity:0;transition:opacity .14s;pointer-events:none}
-.ixgv{height:100%;border-left:1px dashed var(--c)}.ixgh{width:100%;border-top:1px dashed var(--c)}
-.ixgv.on,.ixgh.on{opacity:.7}
+.ixgv{height:100%;border-left:1px solid #FF4D4F}.ixgh{width:100%;border-top:1px solid #FF4D4F}
+.ixgv.on,.ixgh.on{opacity:.4}
 .ixd{position:absolute;left:0;top:0;opacity:0;transition:opacity .14s;background:#FF4D4F}.ixd.on{opacity:1}
 .ixd.v{width:1px}.ixd.h{height:1px}
 .ixd::before,.ixd::after{content:"";position:absolute;background:#FF4D4F}
@@ -165,3 +165,9 @@ html.ix.ixn [data-ly]{transition:none!important}
 .ixd b{position:absolute;padding:2px 5px;border-radius:3px;background:#FF4D4F;color:#fff;font:600 10px/1 "JetBrains Mono",monospace}
 .ixd.v b{left:8px;top:50%;transform:translateY(-50%)}.ixd.h b{top:8px;left:50%;transform:translateX(-50%)}
 @media(max-width:430px){.ixh{font-size:11px;gap:8px;padding:6px 6px 6px 12px}.ixbar{display:none}.ixn i{margin:0 5px}}
+.ixg.hl{background:rgba(10,132,255,.3)}.ixg.hl::after{display:none}
+.ixclone{box-shadow:0 24px 64px -14px rgba(0,0,0,.5)!important;outline:1.5px solid #0A84FF}
+.ixtr{padding:8px 12px;border-radius:10px;color:#9aa0aa}
+.ixtr[aria-pressed=true]{background:#0A84FF33;color:#74b9ff}
+.ixtr[aria-pressed=true]:hover{background:#0A84FF4d}
+@media(max-width:430px){.ixw{display:none}.ixlive{flex-wrap:wrap;justify-content:center}.ixtr{padding:8px 10px}}
